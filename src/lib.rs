@@ -2,6 +2,7 @@
 #![deny(missing_doc)]
 #![feature(phase)]
 #![feature(globs)]
+#![feature(box_syntax)]
 
 //! Session-storage middleware for the [Iron](https://ironframework.io/) web framework.
 //!
@@ -12,9 +13,9 @@
 extern crate collections;
 extern crate core;
 extern crate iron;
-extern crate http;
+extern crate hyper;
 #[cfg(test)]
-extern crate test="iron-test";
+extern crate iron_test as test;
 
 pub use sessions::Sessions;
 pub use sessionstore::SessionStore;

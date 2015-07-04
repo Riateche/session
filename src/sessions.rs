@@ -6,8 +6,11 @@
 //! Key-generating functions and custom stores can be used
 //! to customize functionality.
 
-use iron::{Request, Response, Middleware, Status, Continue};
+use iron::{Request, Response, IronResult};
+use iron::middleware::BeforeMiddleware;
+use hyper::status::StatusCode;
 use super::sessionstore::SessionStore;
+use std::marker::{PhantomData, Reflect};
 
 /// The sessioning middleware.
 ///
@@ -27,6 +30,7 @@ use super::sessionstore::SessionStore;
 /// retrievable from `Request` or `Alloy` will work.
 pub struct Sessions<K, V, S> {
     key_generator: fn(&Request) -> K,
+    value_type: PhantomData<V>,
     session_store: S
 }
 
@@ -34,7 +38,8 @@ impl<K, V, S: SessionStore<K, V> + Clone> Clone for Sessions<K, V, S> {
     fn clone(&self) -> Sessions<K, V, S> {
         Sessions {
             key_generator: self.key_generator,
-            session_store: self.session_store.clone()
+            session_store: self.session_store.clone(),
+            value_type: PhantomData
         }
     }
 }
@@ -55,20 +60,22 @@ impl<K, V, S: SessionStore<K, V>> Sessions<K, V, S> {
                store: S) -> Sessions<K, V, S> {
         Sessions {
             key_generator: key_generator,
-            session_store: store
+            session_store: store,
+            value_type: PhantomData
         }
     }
 }
 
-impl<K: 'static, V, S: SessionStore<K, V> + Clone> Middleware for Sessions<K, V, S> {
+impl<K: 'static, V, S: SessionStore<K, V> + Clone> BeforeMiddleware for Sessions<K, V, S> {
     /// Adds the session store to the `alloy`.
-    fn enter(&mut self, req: &mut Request, _: &mut Response) -> Status {
+
+    fn before(&self, req: &mut Request) -> IronResult<()> {
         // Retrieve the session for this request
         let session = self.session_store.select_session((self.key_generator)(req));
 
         // Store this session in the alloy
         req.alloy.insert(session);
-        Continue
+        Ok(())
     }
 }
 

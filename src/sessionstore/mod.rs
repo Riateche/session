@@ -28,7 +28,8 @@ pub trait SessionStore<K, V>: Clone + Send + Sync {
     /// Returns an owned copy of the value that was set.
     ///
     /// This is analagous to the `insert_or_update_with` method of `HashMap`.
-    fn upsert(&self, key: &K, value: V, mutator: |&mut V|) -> V;
+    fn upsert<F>(&self, key: &K, value: V, mutator: F) -> V
+      where F: Fn(&mut V) -> ();
     /// Remove the session stored at this key.
     fn remove(&self, key: &K) -> bool;
 }
